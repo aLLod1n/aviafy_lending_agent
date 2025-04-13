@@ -1,6 +1,22 @@
 import mongoose from "mongoose";
 const { Schema, model } = mongoose;
 
+const PetSchema = new Schema(
+  {
+    pet_name: { type: String, default: "" },
+    pet_type: { type: String, default: "" }, // e.g., Dog, Cat
+    breed: { type: String, default: "" },
+    size: { type: String, default: "" }, // e.g., Small, Medium, Large
+    age: { type: Number, default: 0 },
+    gender: { type: String, default: "" }, // e.g., Male, Female
+    behavior_notes: { type: String, default: "" },
+    medical_info: { type: String, default: "" },
+    vaccination_status: { type: String, default: "" }, // e.g., Up-to-date, Expired
+    service_preferences: { type: [String], default: [] },
+  },
+  { _id: false }
+);
+
 const CustomerSchema = new Schema(
   {
     full_name: { type: String, required: false, default: "" },
@@ -28,6 +44,9 @@ const CustomerSchema = new Schema(
 
     source: { type: String, default: "landing_demo" },
     bot_suspended: { type: Boolean, default: false },
+
+    // 🐶 Pets Info Embedded
+    pets: { type: [PetSchema], default: [] },
   },
   {
     timestamps: true,

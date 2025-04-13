@@ -1,5 +1,5 @@
-import { Customer } from "../../models/Customer.js";
-import { Message } from "../../models/Message.js";
+import { Customer } from "../models/Customer.js";
+import { Message } from "../models/Message.js";
 
 export async function addNewMessage(
   message,
@@ -28,7 +28,7 @@ export async function addNewMessage(
     // 2. Create new message linked to customer
     const newMessage = await Message.create({
       customer_id: customer._id,
-      sender: sender, // should be "user" or "bot"
+      sender: sender, // should be "user" or "assistant"
       message: text,
     });
 

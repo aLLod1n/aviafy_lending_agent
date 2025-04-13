@@ -1,49 +1,99 @@
-import { createChatWithTools, imageInputLLM } from "../services/LLM.js";
-
+import { addAppointment } from "../services/appointment.service.js";
 import {
   addNewMessage,
   getCustomerMessages,
   updateCustomer,
-} from "../utils/db/customer.handlers.js";
+} from "../services/customer.service.js";
+import { createChatWithTools } from "../middlewares/LLM.js";
 
-// Utility function to create a delay
-// const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function processConversation(message, meta) {
+export async function processConversation(message, meta) {
   try {
     const customer = await addNewMessage(message, meta);
-    const { _id } = customer;
+    const customer_id = customer._id;
 
-    const customerMessages = await getCustomerMessages(_id);
+    const customerMessages = await getCustomerMessages(customer_id);
 
-    const system_instructions = `You are a helpful assistant. You are a groomingYou are a helpful assistant working for a pet care business. Help users make appointments..`;
-    const assistant_resp = await createChatWithTools(
+    // ⏰ Add current datetime for GPT
+    const timezone = meta.timezone || "America/Los_Angeles"; // adjust as needed
+    const now = new Date().toLocaleString("en-US", {
+      timeZone: timezone,
+      hour12: false,
+    });
+
+    const system_instructions = `
+You are a helpful assistant for a pet care business.
+Current local datetime is: ${now}.
+Use this to understand expressions like "today", "tomorrow", "next week", or "in 2 hours".
+Only trigger 'book_appointment' when all data is collected.
+If the user wants to cancel, use the correct time based on this context.
+`;
+
+    const { tool_call, data, assistant_message } = await createChatWithTools(
       customerMessages,
       system_instructions
     );
 
-    const { assistant_message, phone_number, full_name } = assistant_resp;
-
-    console.log(assistant_resp, "arg");
-
     if (assistant_message?.text) {
       await addNewMessage(assistant_message, meta);
-    } else {
-      let updatedCustomer = await updateCustomer(_id, phone_number, full_name);
-      console.log(updatedCustomer, "updatedCustomer");
+    }
+    console.log(assistant_message, "assistant_message");
 
-      let tool_choice = "none";
-      let assistant_resp = await createChatWithTools(
-        customerMessages,
-        system_instructions,
-        tool_choice
+    if (tool_call === "book_appointment") {
+      const {
+        full_name,
+        phone_number,
+        pet_name,
+        pet_type,
+        service_type,
+        preferred_date,
+        preferred_time,
+        duration = 30,
+      } = data;
+
+      const appointment_start = new Date(
+        `${preferred_date}T${preferred_time}:00`
       );
-      const { assistant_message } = assistant_resp;
+      console.log(appointment_start, "appointment_start");
 
-      await addNewMessage(assistant_message, meta);
+      await updateCustomer(customer_id, phone_number, full_name);
+
+      const appointment = await addAppointment(
+        customer_id,
+        pet_name,
+        pet_type,
+        service_type,
+        appointment_start,
+        duration
+      );
+
+      const confirmation = {
+        text: `✅ Appointment booked for ${preferred_date} at ${preferred_time}.`,
+        sender: "assistant",
+      };
+
+      await addNewMessage(confirmation, meta);
+    }
+
+    if (tool_call === "cancel_appointment") {
+      const { preferred_date, preferred_time } = data;
+
+      const result = await cancelAppointment(
+        customer_id,
+        preferred_date,
+        preferred_time
+      );
+
+      const cancellationMessage = {
+        text: result
+          ? `❌ Appointment on ${preferred_date} at ${preferred_time} has been canceled.`
+          : `⚠️ No matching appointment found to cancel.`,
+        sender: "assistant",
+      };
+      console.log(cancellationMessage, "cancellationMessage");
+      await addNewMessage(cancellationMessage, meta);
     }
   } catch (error) {
-    console.error("Error processing conversation:", error);
+    console.error("❌ Error processing conversation:", error);
   }
 }
 

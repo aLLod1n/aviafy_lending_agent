@@ -19,15 +19,16 @@ const AppointmentSchema = new Schema(
     },
     service_type: {
       type: String,
-      required: true, // e.g., "grooming", "vet", "boarding"
+      required: true, // e.g., "grooming", "boarding", etc.
     },
-    preferred_date: {
+    appointment_start: {
       type: Date,
-      required: true,
+      required: true, // Full datetime — e.g., "2024-04-15T14:30:00Z"
     },
-    preferred_time: {
-      type: String,
-      required: true, // e.g., "14:30"
+    duration: {
+      type: Number,
+      required: true,
+      default: 30, // In minutes (can be customized per service type)
     },
     status: {
       type: String,
@@ -36,7 +37,7 @@ const AppointmentSchema = new Schema(
     },
   },
   {
-    timestamps: true, // adds createdAt and updatedAt
+    timestamps: true, // Adds createdAt and updatedAt fields
   }
 );
 
