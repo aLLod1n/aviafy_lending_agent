@@ -1,6 +1,7 @@
 import {
   addNewMessage,
   getCustomerMessages,
+  getCustomerMessagesByIP,
   updateCustomer,
 } from "../services/customer.service.js";
 import {
@@ -25,19 +26,22 @@ Estimate service durations based on these guidelines:
 Only call get_available_times AFTER the user provides service type and preferred date. Include the correct estimated duration in the tool call.
 `;
 
-async function processConversation(message, meta) {
+async function processConversation(meta) {
   try {
-    const customer = await addNewMessage(message, meta);
-    const customerMessages = await getCustomerMessages(customer._id);
+    const { ip_address } = meta;
+    const customer = await getCustomerMessagesByIP(ip_address);
+    if (!customer)
+      return {
+        assistant_message: { text: "Customer not found", sender: "assistant" },
+      };
 
+    const customerMessages = await getCustomerMessages(customer._id);
     const assistantResponse = await createChatWithTools(
       customerMessages,
       system_instructions
     );
 
     const { assistant_message, tool_call, data } = assistantResponse;
-
-    console.log("Assistant Response:", assistantResponse);
 
     if (assistant_message?.text) {
       await addNewMessage(assistant_message, meta);
@@ -54,33 +58,18 @@ async function processConversation(message, meta) {
         duration = 60,
       } = data;
 
-      // Update Customer information
-      const updatedCustomer = await updateCustomer(
-        customer._id,
-        phone_number,
-        full_name
-      );
+      await updateCustomer(customer._id, phone_number, full_name);
 
-      if (!updatedCustomer) {
-        throw new Error("Customer update failed.");
-      }
-
-      // Reliable Parsing of Appointment Date/Time
       const appointment_start = parseUserAppointmentTime(
         appointment_text_time,
         meta.timezone
       );
 
-      console.log("Parsed appointment_start:", appointment_start);
-
       if (!appointment_start || isNaN(appointment_start.getTime())) {
-        throw new Error(
-          "Unable to parse appointment date/time provided by the user."
-        );
+        throw new Error("Could not parse appointment time");
       }
 
-      // Add Appointment
-      const appointment = await addAppointment(
+      const result = await addAppointment(
         customer._id,
         pet_name,
         pet_type,
@@ -89,72 +78,58 @@ async function processConversation(message, meta) {
         duration
       );
 
-      if (appointment.error) {
-        throw new Error(`Appointment booking failed: ${appointment.error}`);
-      }
+      if (result.error) throw new Error(result.error);
 
-      // Send confirmation message back to the user
-      const confirmationMessage = {
-        text: `✅ Your appointment for ${pet_name} (${service_type}) is booked on ${appointment_start.toLocaleString(
+      const confirmMessage = {
+        text: `✅ Appointment booked for ${pet_name} on ${appointment_start.toLocaleString(
           "en-US",
           { timeZone: meta.timezone }
-        )}. Thank you, ${full_name}!`,
-        sender: "assistant",
-      };
-
-      console.log("Confirmation message:", confirmationMessage);
-
-      await addNewMessage(confirmationMessage, meta);
-    }
-    if (tool_call === "get_available_times" && data) {
-      const { appointment_date, duration = 60 } = data;
-      console.log("Data for available times:", data);
-
-      // Reliable Parsing of Appointment Date/Time
-      const appointment_avaiable_times = parseUserAppointmentTime(
-        appointment_date,
-        meta.timezone
-      );
-
-      const availableSlots = await getAvailableTimes(
-        appointment_avaiable_times,
-        duration
-      );
-
-      const availabilityMessage = {
-        text: `📅 Available time slots on ${appointment_avaiable_times}: ${availableSlots.join(
-          ", "
         )}`,
         sender: "assistant",
       };
-      console.log("Availability message:", availabilityMessage);
 
-      await addNewMessage(availabilityMessage, meta);
+      await addNewMessage(confirmMessage, meta);
+      return { assistant_message: confirmMessage };
     }
-  } catch (error) {
-    console.error("Error processing conversation:", error.message);
-    await addNewMessage(
-      {
-        text: `❌ Sorry, there was an issue: ${error.message}`,
+
+    if (tool_call === "get_available_times" && data) {
+      const { appointment_date, duration = 30 } = data;
+      const slots = await getAvailableTimes(appointment_date, duration);
+      const msg = {
+        text: `📅 Available slots on ${appointment_date}: ${slots.join(", ")}`,
         sender: "assistant",
-      },
-      meta
-    );
+      };
+
+      await addNewMessage(msg, meta);
+      return { assistant_message: msg };
+    }
+
+    // default return if just assistant response
+    return { assistant_message };
+  } catch (error) {
+    console.error("❌ Error in processConversation:", error);
+    const failMsg = {
+      text: `❗ Sorry, something went wrong: ${error.message}`,
+      sender: "assistant",
+    };
+    await addNewMessage(failMsg, meta);
+    return { assistant_message: failMsg };
   }
 }
 
-export { processConversation };
+let debounceTimers = new Map(); // Map by user IP or session ID
 
 export async function handleIncomingMessage(req, res) {
   try {
-    res.send("POST request handled");
-    const { body } = req;
-    const message = body.message;
-    const meta = body.meta;
-    // console.log(body, "body");
-    await processConversation(message, meta);
+    const { message, meta } = req.body;
+
+    await addNewMessage(message, meta);
+
+    const response = await processConversation(meta);
+
+    res.status(200).json({ message: response.assistant_message });
   } catch (error) {
-    console.error("Error in Telegram handler:", error);
-    res.status(500).send("Error handling Telegram request.");
+    console.error("Error in handleIncomingMessage:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 }

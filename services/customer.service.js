@@ -95,3 +95,13 @@ export async function updateCustomer(customer_id, phone_number, full_name) {
     return false;
   }
 }
+
+export async function getCustomerMessagesByIP(ip_address) {
+  try {
+    const customer = await Customer.findOne({ ip_address });
+    return customer;
+  } catch (err) {
+    console.error("Error getting customer by IP:", err);
+    return null;
+  }
+}
