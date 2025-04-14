@@ -3,31 +3,24 @@ export const tools = [
     type: "function",
     function: {
       name: "get_customer_info",
-      description:
-        "Collect the customer's full name and phone number if missing.",
+      description: "Collect customer's full name and phone number if unknown.",
       parameters: {
         type: "object",
         properties: {
-          full_name: {
-            type: "string",
-            description: "Customer's full name.",
-          },
-          phone_number: {
-            type: "string",
-            description: "Phone number without country code (e.g., 4567890).",
-          },
+          full_name: { type: "string" },
+          phone_number: { type: "string" },
         },
         required: ["full_name", "phone_number"],
         additionalProperties: false,
       },
-      strict: true,
     },
   },
   {
-    type: "function", // ✅ This is required
+    type: "function",
     function: {
       name: "book_appointment",
-      description: "Books a pet appointment",
+      description:
+        "Book an appointment based on user's provided text for the appointment date/time.",
       parameters: {
         type: "object",
         properties: {
@@ -39,11 +32,15 @@ export const tools = [
             enum: ["dog", "cat", "other"],
           },
           service_type: { type: "string" },
-          preferred_date: { type: "string" },
-          preferred_time: { type: "string" },
+          appointment_text_time: {
+            type: "string",
+            description:
+              "User's appointment time phrase exactly as they stated (e.g., 'tomorrow at noon', 'next Tuesday 3PM'), make shure it is grammatically correct",
+          },
           duration: {
             type: "integer",
-            description: "Duration of the appointment in minutes",
+            description: "Duration in minutes",
+            default: 60,
           },
         },
         required: [
@@ -52,33 +49,10 @@ export const tools = [
           "pet_name",
           "pet_type",
           "service_type",
-          "preferred_date",
-          "preferred_time",
+          "appointment_text_time",
         ],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "cancel_appointment",
-      description: "Cancel an upcoming appointment for a customer.",
-      parameters: {
-        type: "object",
-        properties: {
-          preferred_date: {
-            type: "string",
-            description: "Date of appointment (YYYY-MM-DD)",
-          },
-          preferred_time: {
-            type: "string",
-            description: "Time of appointment (HH:mm)",
-          },
-        },
-        required: ["preferred_date", "preferred_time"],
         additionalProperties: false,
       },
-      strict: true,
     },
   },
 ];

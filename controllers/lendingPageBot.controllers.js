@@ -1,64 +1,76 @@
-import { addAppointment } from "../services/appointment.service.js";
 import {
   addNewMessage,
   getCustomerMessages,
   updateCustomer,
 } from "../services/customer.service.js";
+import { addAppointment } from "../services/appointment.service.js";
 import { createChatWithTools } from "../middlewares/LLM.js";
+import { parseUserAppointmentTime } from "../utils/dateParser.js";
 
-export async function processConversation(message, meta) {
-  try {
-    const customer = await addNewMessage(message, meta);
-    const customer_id = customer._id;
-
-    const customerMessages = await getCustomerMessages(customer_id);
-
-    // ⏰ Add current datetime for GPT
-    const timezone = meta.timezone || "America/Los_Angeles"; // adjust as needed
-    const now = new Date().toLocaleString("en-US", {
-      timeZone: timezone,
-      hour12: false,
-    });
-
-    const system_instructions = `
-You are a helpful assistant for a pet care business.
-Current local datetime is: ${now}.
-Use this to understand expressions like "today", "tomorrow", "next week", or "in 2 hours".
-Only trigger 'book_appointment' when all data is collected.
-If the user wants to cancel, use the correct time based on this context.
+const system_instructions = `
+You are a helpful assistant for a pet care company.
+Clearly collect all necessary details from the customer for appointment booking.
+If a customer specifies an appointment date/time, return it exactly as given. Do not parse it yourself.
+If any required information (full name, phone number, pet details, service type, appointment date/time) is missing, ask explicitly.
 `;
 
-    const { tool_call, data, assistant_message } = await createChatWithTools(
+async function processConversation(message, meta) {
+  try {
+    const customer = await addNewMessage(message, meta);
+    const customerMessages = await getCustomerMessages(customer._id);
+
+    const assistantResponse = await createChatWithTools(
       customerMessages,
       system_instructions
     );
 
+    const { assistant_message, tool_call, data } = assistantResponse;
+
+    console.log("Assistant Response:", assistantResponse);
+
     if (assistant_message?.text) {
       await addNewMessage(assistant_message, meta);
     }
-    console.log(assistant_message, "assistant_message");
 
-    if (tool_call === "book_appointment") {
+    if (tool_call === "book_appointment" && data) {
       const {
         full_name,
         phone_number,
         pet_name,
         pet_type,
         service_type,
-        preferred_date,
-        preferred_time,
-        duration = 30,
+        appointment_text_time,
+        duration = 60,
       } = data;
 
-      const appointment_start = new Date(
-        `${preferred_date}T${preferred_time}:00`
+      // Update Customer information
+      const updatedCustomer = await updateCustomer(
+        customer._id,
+        phone_number,
+        full_name
       );
-      console.log(appointment_start, "appointment_start");
 
-      await updateCustomer(customer_id, phone_number, full_name);
+      if (!updatedCustomer) {
+        throw new Error("Customer update failed.");
+      }
 
+      // Reliable Parsing of Appointment Date/Time
+      const appointment_start = parseUserAppointmentTime(
+        appointment_text_time,
+        meta.timezone
+      );
+
+      console.log("Parsed appointment_start:", appointment_start);
+
+      if (!appointment_start || isNaN(appointment_start.getTime())) {
+        throw new Error(
+          "Unable to parse appointment date/time provided by the user."
+        );
+      }
+
+      // Add Appointment
       const appointment = await addAppointment(
-        customer_id,
+        customer._id,
         pet_name,
         pet_type,
         service_type,
@@ -66,36 +78,36 @@ If the user wants to cancel, use the correct time based on this context.
         duration
       );
 
-      const confirmation = {
-        text: `✅ Appointment booked for ${preferred_date} at ${preferred_time}.`,
+      if (appointment.error) {
+        throw new Error(`Appointment booking failed: ${appointment.error}`);
+      }
+
+      // Send confirmation message back to the user
+      const confirmationMessage = {
+        text: `✅ Your appointment for ${pet_name} (${service_type}) is booked on ${appointment_start.toLocaleString(
+          "en-US",
+          { timeZone: meta.timezone }
+        )}. Thank you, ${full_name}!`,
         sender: "assistant",
       };
 
-      await addNewMessage(confirmation, meta);
-    }
+      console.log("Confirmation message:", confirmationMessage);
 
-    if (tool_call === "cancel_appointment") {
-      const { preferred_date, preferred_time } = data;
-
-      const result = await cancelAppointment(
-        customer_id,
-        preferred_date,
-        preferred_time
-      );
-
-      const cancellationMessage = {
-        text: result
-          ? `❌ Appointment on ${preferred_date} at ${preferred_time} has been canceled.`
-          : `⚠️ No matching appointment found to cancel.`,
-        sender: "assistant",
-      };
-      console.log(cancellationMessage, "cancellationMessage");
-      await addNewMessage(cancellationMessage, meta);
+      await addNewMessage(confirmationMessage, meta);
     }
   } catch (error) {
-    console.error("❌ Error processing conversation:", error);
+    console.error("Error processing conversation:", error.message);
+    await addNewMessage(
+      {
+        text: `❌ Sorry, there was an issue: ${error.message}`,
+        sender: "assistant",
+      },
+      meta
+    );
   }
 }
+
+export { processConversation };
 
 export async function handleIncomingMessage(req, res) {
   try {

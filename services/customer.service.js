@@ -88,7 +88,7 @@ export async function updateCustomer(customer_id, phone_number, full_name) {
         runValidators: true, // Ensure Mongoose validation is applied
       }
     );
-
+    console.log("Updated customer:", updatedCustomer); // Debugging line to check the updated customer
     return updatedCustomer;
   } catch (error) {
     console.error("Error updating customer:", error);
