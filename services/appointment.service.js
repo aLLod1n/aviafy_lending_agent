@@ -127,3 +127,51 @@ export async function cancelAppointment(customer_id, date, time) {
     return null;
   }
 }
+
+export async function getAvailableTimes(appointment_date, duration = 60) {
+  const WORK_HOURS = {
+    start: 9,
+    end: 18,
+  };
+
+  const bookedTimes = await getBookedTimesByDate(appointment_date);
+  const available = [];
+
+  for (let hour = WORK_HOURS.start; hour < WORK_HOURS.end; hour++) {
+    const timeSlot = `${String(hour).padStart(2, "0")}:00`;
+    if (!bookedTimes.includes(timeSlot)) {
+      available.push(timeSlot);
+    }
+  }
+
+  return available;
+}
+
+/**
+ * Get booked time slots on a specific date (returns ["09:00", "10:30", ...])
+ * @param {String} date - Format: "YYYY-MM-DD"
+ * @returns {Array} - Array of strings representing booked time slots
+ */
+async function getBookedTimesByDate(date) {
+  try {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+
+    const appointments = await Appointment.find({
+      appointment_start: { $gte: start, $lte: end },
+      status: { $ne: "canceled" },
+    });
+
+    const times = appointments.map(
+      (appt) => appt.appointment_start.toISOString().substring(11, 16) // e.g., "14:30"
+    );
+
+    return times;
+  } catch (error) {
+    console.error("❌ Error in getBookedTimesByDate:", error.message);
+    return [];
+  }
+}

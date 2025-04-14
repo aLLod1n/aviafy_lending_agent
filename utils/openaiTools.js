@@ -55,4 +55,29 @@ export const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_available_times",
+      description:
+        "Checks available time slots on a date. Include estimated duration based on service type (e.g., grooming = 60 minutes). return time that user provided in grammatically correct form.",
+      parameters: {
+        type: "object",
+        properties: {
+          appointment_date: {
+            type: "string",
+            description:
+              "User's appointment time phrase exactly as they stated (e.g., 'tomorrow at noon', 'next Tuesday 3PM'), make shure it is grammatically correct",
+          },
+          duration: {
+            type: "integer",
+            description:
+              "Duration of service in minutes. Should be estimated based on service type.",
+          },
+        },
+        required: ["appointment_date", "duration"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];

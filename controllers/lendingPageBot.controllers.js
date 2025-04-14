@@ -3,7 +3,10 @@ import {
   getCustomerMessages,
   updateCustomer,
 } from "../services/customer.service.js";
-import { addAppointment } from "../services/appointment.service.js";
+import {
+  addAppointment,
+  getAvailableTimes,
+} from "../services/appointment.service.js";
 import { createChatWithTools } from "../middlewares/LLM.js";
 import { parseUserAppointmentTime } from "../utils/dateParser.js";
 
@@ -12,6 +15,14 @@ You are a helpful assistant for a pet care company.
 Clearly collect all necessary details from the customer for appointment booking.
 If a customer specifies an appointment date/time, return it exactly as given. Do not parse it yourself.
 If any required information (full name, phone number, pet details, service type, appointment date/time) is missing, ask explicitly.
+Estimate service durations based on these guidelines:
+- "Grooming" → 60 minutes
+- "Nail trim" → 15 minutes
+- "Bath & blow dry" → 30 minutes
+- "Boarding" → 120 minutes
+- "Vet visit" → 30 minutes
+
+Only call get_available_times AFTER the user provides service type and preferred date. Include the correct estimated duration in the tool call.
 `;
 
 async function processConversation(message, meta) {
@@ -94,6 +105,31 @@ async function processConversation(message, meta) {
       console.log("Confirmation message:", confirmationMessage);
 
       await addNewMessage(confirmationMessage, meta);
+    }
+    if (tool_call === "get_available_times" && data) {
+      const { appointment_date, duration = 60 } = data;
+      console.log("Data for available times:", data);
+
+      // Reliable Parsing of Appointment Date/Time
+      const appointment_avaiable_times = parseUserAppointmentTime(
+        appointment_date,
+        meta.timezone
+      );
+
+      const availableSlots = await getAvailableTimes(
+        appointment_avaiable_times,
+        duration
+      );
+
+      const availabilityMessage = {
+        text: `📅 Available time slots on ${appointment_avaiable_times}: ${availableSlots.join(
+          ", "
+        )}`,
+        sender: "assistant",
+      };
+      console.log("Availability message:", availabilityMessage);
+
+      await addNewMessage(availabilityMessage, meta);
     }
   } catch (error) {
     console.error("Error processing conversation:", error.message);
