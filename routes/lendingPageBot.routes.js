@@ -4,6 +4,9 @@ import * as lendingBotControllers from "../controllers/lendingPageBot.controller
 
 const router = Router();
 
-router.route("/lendingBot").post(lendingBotControllers.handleIncomingMessage);
+router.route("/sand-message").post(lendingBotControllers.handleIncomingMessage);
+router
+  .route("/get-customers-messages")
+  .post(lendingBotControllers.getCustomersMessage);
 
 export default router;

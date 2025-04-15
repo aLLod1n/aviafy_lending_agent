@@ -2,6 +2,7 @@ import {
   addNewMessage,
   getCustomerMessages,
   updateCustomer,
+  getCustomerByIP,
 } from "../services/customer.service.js";
 import {
   addAppointment,
@@ -140,5 +141,32 @@ export async function handleIncomingMessage(req, res) {
         sender: "assistant",
       },
     });
+  }
+}
+
+export async function getCustomersMessage(req, res) {
+  try {
+    const { ip_address } = req.body;
+
+    if (!ip_address) {
+      return res.status(400).json({ error: "Missing ip_address" });
+    }
+
+    const customer = await getCustomerByIP(ip_address);
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    const messages = await getCustomerMessages(customer._id);
+
+    return res.status(200).json({
+      customer_id: customer._id,
+      full_name: customer.full_name,
+      phone_number: customer.phone_number?.number || null,
+      messages,
+    });
+  } catch (error) {
+    console.error("❌ Error in getCustomersMessage:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 }
