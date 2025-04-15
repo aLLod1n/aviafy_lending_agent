@@ -1,6 +1,23 @@
 import { Customer } from "../models/Customer.js";
 import { Message } from "../models/Message.js";
 
+/**
+ * Find a customer by IP address.
+ * @param {string} ip_address - User's IP address
+ * @returns {Object|null} - Customer document or null
+ */
+export async function getCustomerByIP(ip_address) {
+  try {
+    if (!ip_address) throw new Error("IP address is required");
+
+    const customer = await Customer.findOne({ ip_address });
+    return customer;
+  } catch (error) {
+    console.error("❌ Error finding customer by IP:", error.message);
+    return null;
+  }
+}
+
 export async function addNewMessage(
   message,
   meta = { user_agent: "", country_code: "", timezone: "", ip_address: "" }

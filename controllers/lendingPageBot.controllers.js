@@ -1,7 +1,6 @@
 import {
   addNewMessage,
   getCustomerMessages,
-  getCustomerMessagesByIP,
   updateCustomer,
 } from "../services/customer.service.js";
 import {
@@ -10,38 +9,21 @@ import {
 } from "../services/appointment.service.js";
 import { createChatWithTools } from "../middlewares/LLM.js";
 import { parseUserAppointmentTime } from "../utils/dateParser.js";
+import { system_instructions } from "../utils/systemInstructions.js";
 
-const system_instructions = `
-You are a helpful assistant for a pet care company.
-Clearly collect all necessary details from the customer for appointment booking.
-If a customer specifies an appointment date/time, return it exactly as given. Do not parse it yourself.
-If any required information (full name, phone number, pet details, service type, appointment date/time) is missing, ask explicitly.
-Estimate service durations based on these guidelines:
-- "Grooming" → 60 minutes
-- "Nail trim" → 15 minutes
-- "Bath & blow dry" → 30 minutes
-- "Boarding" → 120 minutes
-- "Vet visit" → 30 minutes
-
-Only call get_available_times AFTER the user provides service type and preferred date. Include the correct estimated duration in the tool call.
-`;
-
-async function processConversation(meta) {
+async function processConversation(message, meta) {
   try {
-    const { ip_address } = meta;
-    const customer = await getCustomerMessagesByIP(ip_address);
-    if (!customer)
-      return {
-        assistant_message: { text: "Customer not found", sender: "assistant" },
-      };
-
+    const customer = await addNewMessage(message, meta);
     const customerMessages = await getCustomerMessages(customer._id);
+
     const assistantResponse = await createChatWithTools(
       customerMessages,
       system_instructions
     );
 
     const { assistant_message, tool_call, data } = assistantResponse;
+
+    console.log("Assistant Response:", assistantResponse);
 
     if (assistant_message?.text) {
       await addNewMessage(assistant_message, meta);
@@ -58,18 +40,27 @@ async function processConversation(meta) {
         duration = 60,
       } = data;
 
-      await updateCustomer(customer._id, phone_number, full_name);
+      // Update customer info
+      const updatedCustomer = await updateCustomer(
+        customer._id,
+        phone_number,
+        full_name
+      );
+      if (!updatedCustomer) {
+        throw new Error("Customer update failed.");
+      }
 
+      // Parse time
       const appointment_start = parseUserAppointmentTime(
         appointment_text_time,
         meta.timezone
       );
-
       if (!appointment_start || isNaN(appointment_start.getTime())) {
-        throw new Error("Could not parse appointment time");
+        throw new Error("Invalid appointment time.");
       }
 
-      const result = await addAppointment(
+      // Save appointment
+      const appointment = await addAppointment(
         customer._id,
         pet_name,
         pet_type,
@@ -77,59 +68,77 @@ async function processConversation(meta) {
         appointment_start,
         duration
       );
+      if (appointment.error) {
+        throw new Error(`Booking failed: ${appointment.error}`);
+      }
 
-      if (result.error) throw new Error(result.error);
-
-      const confirmMessage = {
-        text: `✅ Appointment booked for ${pet_name} on ${appointment_start.toLocaleString(
+      const confirmationMessage = {
+        text: `✅ Your appointment for ${pet_name} (${service_type}) is booked on ${appointment_start.toLocaleString(
           "en-US",
           { timeZone: meta.timezone }
-        )}`,
+        )}. Thank you, ${full_name}!`,
         sender: "assistant",
       };
 
-      await addNewMessage(confirmMessage, meta);
-      return { assistant_message: confirmMessage };
+      await addNewMessage(confirmationMessage, meta);
+      return { assistant_message: confirmationMessage };
     }
 
     if (tool_call === "get_available_times" && data) {
-      const { appointment_date, duration = 30 } = data;
-      const slots = await getAvailableTimes(appointment_date, duration);
-      const msg = {
-        text: `📅 Available slots on ${appointment_date}: ${slots.join(", ")}`,
+      const { appointment_date, duration = 60 } = data;
+
+      const date = parseUserAppointmentTime(appointment_date, meta.timezone);
+      const availableSlots = await getAvailableTimes(date, duration);
+
+      const availabilityMessage = {
+        text: `📅 Available slots on ${date.toLocaleDateString(
+          "en-US"
+        )}: ${availableSlots.join(", ")}`,
         sender: "assistant",
       };
 
-      await addNewMessage(msg, meta);
-      return { assistant_message: msg };
+      await addNewMessage(availabilityMessage, meta);
+      return { assistant_message: availabilityMessage };
     }
 
-    // default return if just assistant response
+    // Final fallback
     return { assistant_message };
   } catch (error) {
-    console.error("❌ Error in processConversation:", error);
-    const failMsg = {
-      text: `❗ Sorry, something went wrong: ${error.message}`,
+    console.error("Error processing conversation:", error.message);
+    const errorMsg = {
+      text: `❌ Sorry, something went wrong: ${error.message}`,
       sender: "assistant",
     };
-    await addNewMessage(failMsg, meta);
-    return { assistant_message: failMsg };
+    await addNewMessage(errorMsg, meta);
+    return { assistant_message: errorMsg };
   }
 }
-
-let debounceTimers = new Map(); // Map by user IP or session ID
 
 export async function handleIncomingMessage(req, res) {
   try {
     const { message, meta } = req.body;
 
-    await addNewMessage(message, meta);
+    const assistantResponse = await processConversation(message, meta);
 
-    const response = await processConversation(meta);
+    if (assistantResponse?.assistant_message) {
+      return res.status(200).json({
+        message: assistantResponse.assistant_message,
+      });
+    }
 
-    res.status(200).json({ message: response.assistant_message });
+    return res.status(200).json({
+      message: {
+        text: "✅ Message processed.",
+        sender: "assistant",
+      },
+    });
   } catch (error) {
-    console.error("Error in handleIncomingMessage:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("❌ Error in handleIncomingMessage:", error);
+    return res.status(500).json({
+      message: {
+        text: `❗ Error occurred: ${error.message}`,
+        sender: "assistant",
+      },
+    });
   }
 }
