@@ -60,7 +60,7 @@ export const tools = [
     function: {
       name: "get_available_times",
       description:
-        "Checks available time slots on a date. Include estimated duration based on service type (e.g., grooming = 60 minutes). return time that user provided in grammatically correct form.",
+        "Checks available time slots on a date. Include estimated duration based on service type (e.g., grooming = 60 minutes). return time that user provided in grammatically correct form and return it in English.",
       parameters: {
         type: "object",
         properties: {
