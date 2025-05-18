@@ -67,7 +67,7 @@ export const tools = [
           appointment_date: {
             type: "string",
             description:
-              "User's appointment time phrase exactly as they stated (e.g., 'tomorrow at noon', 'next Tuesday 3PM'), make shure it is grammatically correct",
+              "User's appointment time phrase exactly as they stated but in English and only English (e.g., 'tomorrow at noon', 'next Tuesday 3PM'), make shure it is grammatically correct",
           },
           duration: {
             type: "integer",
