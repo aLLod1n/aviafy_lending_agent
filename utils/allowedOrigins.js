@@ -4,4 +4,6 @@ export const allowedOrigins = [
   "https://petbuddy-one.vercel.app",
   "https://bot-landing-sigma.vercel.app/en",
   "https://bot-landing-sigma.vercel.app",
+  "https://www.petbuddy.care/en",
+  "https://www.petbuddy.care",
 ];
