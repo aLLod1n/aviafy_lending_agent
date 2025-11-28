@@ -6,4 +6,5 @@ export const allowedOrigins = [
   "https://bot-landing-sigma.vercel.app",
   "https://www.petbuddy.care/en",
   "https://www.petbuddy.care",
+  "https://myaviafy.com",
 ];
