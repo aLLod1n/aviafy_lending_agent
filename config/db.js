@@ -8,9 +8,18 @@ export const connectDB = () => {
   // Set the strictQuery option to false
   mongoose.set("strictQuery", false);
 
-  // Connect to MongoDB using the connection string from environment variables
+  const mongoUri =
+    process.env.MONGO_URL ||
+    process.env.MONGODB_URI ||
+    process.env.MONGODB_URL;
+  if (!mongoUri || typeof mongoUri !== "string") {
+    console.error(
+      "MongoDB URI is missing. Set MONGO_URL or MONGODB_URI in Render Environment and redeploy."
+    );
+    process.exit(1);
+  }
   mongoose
-    .connect(process.env.MONGO_URL, {
+    .connect(mongoUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     })
@@ -19,6 +28,6 @@ export const connectDB = () => {
     })
     .catch((err) => {
       console.error("Failed to connect to MongoDB:", err.message);
-      process.exit(1); // Exit with a non-zero status code to indicate failure
+      process.exit(1);
     });
 };
