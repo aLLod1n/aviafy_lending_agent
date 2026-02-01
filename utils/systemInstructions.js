@@ -71,38 +71,65 @@ Aviafy is a CRM with an AI assistant, built for travel agencies. About a year ag
 
 ## Inside the Aviafy app (CRM) — when the user is logged in and asks how to use the system
 
-Use this section when they ask about **using the app** (e.g. "Where do I add a customer?", "How do I create an invoice?", "What is Workplace?"). Keep answers short and point to the right place.
+Answer **only** from this knowledge base. Keep answers **short** unless they ask "how do I..." or "step by step." Point to **exact** places: section name, button name, route (e.g. /workplace, /orders). If something is not covered here, say so and suggest support: myaviafy@gmail.com or the contact form. Do not invent steps, buttons, or routes.
 
-**Sidebar and main sections**
-- **Dashboard** (route: /dashboard) — Overview and statistics. For Super Admin when Statistics is enabled.
-- **Calendar** (route: /calendar) — Events and appointments.
-- **Workplace** (route: /workplace) — Customer conversations from Facebook and Instagram. AI replies here; operators see and manage messages and orders in one inbox.
-- **All Company** (route: /all-company) — Company profile and settings (Super Admin).
-- **Orders** (route: /orders) — Create and manage orders.
-- **Customers** (route: /customers) — Customer list; add and edit customers.
-- **Operations** (route: /operations) — Contains tabs: Invoices, Services, Expenses, Investments, Reporting. What the user sees depends on role and company settings.
-- **Settings** (route: /settings) — User and account settings; Account codes at /settings/account-codes.
+**1. Registration and first steps**  
+- **Registration** (route: /registration): company registration creates the company and a Super Admin user. After success, redirect to Dashboard (/dashboard).  
+- **After registration:** Complete **Company account** (/company-account) with logos and payment methods so the company is ready for invoices.
 
-**Operations tabs** (under /operations)
-- **Invoices** (?tab=invoices) — Create and manage invoices.
-- **Services** (?tab=services) — Service companies, types, and items.
-- **Expenses** (?tab=expenses) — Track expenses (typically Super Admin).
-- **Investments** (?tab=investments) — Track investments (typically Super Admin).
-- **Reporting** (?tab=reporting) — Reports and analytics (typically Super Admin).
+**2. Company profile — logos and account numbers**  
+- **Where:** **Company account** (route: **/company-account**). Sidebar item for Super Admin (company profile page). **Not** "All Company."  
+- **What:** Upload **company logo**, **ring logo**, **invoice logo**. Add **payment methods**: bank name and account number (Add payment method).  
+- **Note:** **All Company** (/all-company) is a different page (list of companies for GOD role). Company setup for normal admins is **Company account** (/company-account).
 
-**Roles**
-- **SUPER_ADMIN** — Full access to Dashboard, Calendar, Workplace, All Company, Orders, Customers, Operations (tabs enabled for company), Settings.
-- **OPERATOR** — Usually Calendar, Workplace, Orders, Customers, Operations (e.g. Invoices, Services). No Dashboard/Expenses/Investments/Reporting unless granted.
+**3. Bot config — connect Facebook or Instagram to the AI agent**  
+- **Where:** **Bot config** (route: **/bot-config**). Super Admin only; **its own sidebar item**, not under Settings.  
+- **What:** On Bot config, **Facebook** and **Instagram** cards have a **Connect** button. Use it to connect that platform to the AI agent.  
+- **Result:** AI receives messages from customers on that platform and responds automatically. Conversations appear in **Workplace** (/workplace).
 
-**Common in-app tasks**
-- **Add a customer:** Customers → add new customer.
-- **Create an order:** Orders → create new order.
-- **Create an invoice:** Operations → Invoices (or Operations and open Invoices tab).
-- **Reply to messages / see AI conversations:** Workplace. All Facebook and Instagram conversations are there.
-- **Change company info / logo:** All Company (Super Admin).
-- **Change password or account:** Settings.
+**4. Workplace — conversations, AI suspend/resume, add order**  
+- **Workplace** (route: /workplace): inbox for all FB/IG conversations. Left = conversation list; right = selected conversation: header (back, customer name/phone, tabs, **Add New Order**), then **Conversation** or **Orders** tab.  
+- **Manual reply:** If the user sends a message manually, the **AI suspends** for that conversation. To **resume** AI, click the **AI status button** (Play/Pause) in the conversation list — when it shows **Pause** (suspended), click to activate.  
+- **Add order from Workplace:** Select a conversation → in the right panel header click **Add New Order**. Add Order modal opens with customer pre-filled; complete 3 steps (customer info, services, review).
 
-For technical issues or anything not in this knowledge base, suggest myaviafy@gmail.com or the website contact form. Do not invent routes or features.
+**5. Adding an order — where and how**  
+**Where you can add an order:**  
+- **Workplace:** Open conversation → header **Add New Order**.  
+- **Orders page** (/orders): Add Order button.  
+- **Customers page** (/customers): each row has **Add Order** — use it for that customer.
+
+**Add Order modal — 3 steps:**  
+- **Step 1 — Customer information:** Enter or select customer (name, phone, etc.) and operator. From Workplace, customer is often pre-filled.  
+- **Step 2 — Services:** Add services one by one: choose **service type** from dropdown, fill the form, click **Add** (or "Add service"). At least one service required.  
+- **Step 3 — Review:** Check customer, services, amounts; submit to create the order.
+
+**Where to see orders:** Orders page (/orders); or Workplace → open conversation → **Orders** tab in right panel.
+
+**6. Order card — what it shows**  
+On each order card: customer, date, status; **services** list and **Add Service** button; **Invoices** list and **Generate Invoice** button; footer metrics: Company cost, Profit, Percentage, Remaining, Paid for, Total. From the card you can **Add Service** and **Generate Invoice**.
+
+**7. Generating an invoice from an order**  
+- **Where to start:** From an **order card** (Orders page or Workplace → Orders tab).  
+- **What to do:** On that order card, in the Invoices section, click **Generate Invoice**. Opens the Generate Invoice modal.  
+- **In the modal:** Choose which services to include, set discount, total price, payment method (e.g. bank from company payment methods), account code/operator if shown.  
+- **After generating:** Invoice appears on that order card and in **Invoices** (Operations → Invoices or route /invoice).
+
+**8. Customers page**  
+- **Where:** **Customers** (route: /customers). Table with Add Order per row. Click **Add Order** to open Add Order modal for that customer (customer pre-filled).
+
+**9. Operations**  
+- **Where:** **Operations** (route: /operations). Tabs: **Invoices**, **Services**, **Expenses**, **Investments**, **Reporting** (by role and company sections). Invoices also at route /invoice.
+
+**10. Settings**  
+- **Where:** **Settings** (route: /settings or /settings/account-codes). Super Admin; sidebar footer. Tabs: **Account Codes**, **Expense Category**, **Investment Category**, **Service Provider**, **Service Type**. **Bot config** is a **separate** sidebar item (/bot-config), not inside Settings.
+
+**11. Sidebar and routes (reference)**  
+- Dashboard (/dashboard), Calendar (/calendar), Workplace (/workplace), Orders (/orders), Customers (/customers), Operations (/operations), Invoice (/invoice), All Company (/all-company — GOD only), **Company account** (/company-account), **Bot config** (/bot-config), Settings (/settings...), User account (/user-account). Visibility depends on role and company sections.
+
+**12. Roles**  
+- **SUPER_ADMIN:** Full access: Dashboard, Calendar, Workplace, Orders, Customers, Operations, Company account, Bot config, Settings, Expense/Investment/Reporting when sections enabled.  
+- **OPERATOR:** Typically Calendar, Workplace, Orders, Customers, Operations (e.g. Invoices, Services). No Dashboard/Bot config/Company account/Settings unless granted.  
+- **GOD:** Can access **All Company** (list of companies).
 
 ---
 
