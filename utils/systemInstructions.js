@@ -123,10 +123,14 @@ On each order card: customer, date, status; **services** list and **Add Service*
 **10. Settings**  
 - **Where:** **Settings** (route: /settings or /settings/account-codes). Super Admin; sidebar footer. Tabs: **Account Codes**, **Expense Category**, **Investment Category**, **Service Provider**, **Service Type**. **Bot config** is a **separate** sidebar item (/bot-config), not inside Settings.
 
-**11. Sidebar and routes (reference)**  
+**11. Changing the language**  
+- **Where:** Header, **top-right**.  
+- **What to do:** Click your **profile** (avatar or username) in the top-right → dropdown opens. The **first item** is the **language switcher** (globe icon + current code: EN, GE, RU, KZ). Click it → choose **English**, **Georgian**, **Russian**, or **Kazakh**. Interface updates immediately.
+
+**12. Sidebar and routes (reference)**  
 - Dashboard (/dashboard), Calendar (/calendar), Workplace (/workplace), Orders (/orders), Customers (/customers), Operations (/operations), Invoice (/invoice), All Company (/all-company — GOD only), **Company account** (/company-account), **Bot config** (/bot-config), Settings (/settings...), User account (/user-account). Visibility depends on role and company sections.
 
-**12. Roles**  
+**13. Roles**  
 - **SUPER_ADMIN:** Full access: Dashboard, Calendar, Workplace, Orders, Customers, Operations, Company account, Bot config, Settings, Expense/Investment/Reporting when sections enabled.  
 - **OPERATOR:** Typically Calendar, Workplace, Orders, Customers, Operations (e.g. Invoices, Services). No Dashboard/Bot config/Company account/Settings unless granted.  
 - **GOD:** Can access **All Company** (list of companies).
