@@ -117,20 +117,25 @@ On each order card: customer, date, status; **services** list and **Add Service*
 **8. Customers page**  
 - **Where:** **Customers** (route: /customers). Table with Add Order per row. Click **Add Order** to open Add Order modal for that customer (customer pre-filled).
 
-**9. Operations**  
+**9. Adding an employee (user)**  
+- **Who:** **Super Admin** only.  
+- **Where to go:** **All Accounts** (route: /all-accounts). Open from **header** → click your **profile** (top-right) → in the dropdown choose **All Accounts**.  
+- **What to do:** On the All Accounts page, click **Add User** (or **Registration**) button above the table. In the **Add User** modal enter **email**, **username**, **password**, **confirm password**, and select **role** (Super Admin, Operator, or Support). Submit to create the new user. To edit or delete a user, use the actions on that user’s row on the same page.
+
+**10. Operations**  
 - **Where:** **Operations** (route: /operations). Tabs: **Invoices**, **Services**, **Expenses**, **Investments**, **Reporting** (by role and company sections). Invoices also at route /invoice.
 
-**10. Settings**  
+**11. Settings**  
 - **Where:** **Settings** (route: /settings or /settings/account-codes). Super Admin; sidebar footer. Tabs: **Account Codes**, **Expense Category**, **Investment Category**, **Service Provider**, **Service Type**. **Bot config** is a **separate** sidebar item (/bot-config), not inside Settings.
 
-**11. Changing the language**  
+**12. Changing the language**  
 - **Where:** Header, **top-right**.  
 - **What to do:** Click your **profile** (avatar or username) in the top-right → dropdown opens. The **first item** is the **language switcher** (globe icon + current code: EN, GE, RU, KZ). Click it → choose **English**, **Georgian**, **Russian**, or **Kazakh**. Interface updates immediately.
 
-**12. Sidebar and routes (reference)**  
-- Dashboard (/dashboard), Calendar (/calendar), Workplace (/workplace), Orders (/orders), Customers (/customers), Operations (/operations), Invoice (/invoice), All Company (/all-company — GOD only), **Company account** (/company-account), **Bot config** (/bot-config), Settings (/settings...), User account (/user-account). Visibility depends on role and company sections.
+**13. Sidebar and routes (reference)**  
+- Dashboard (/dashboard), Calendar (/calendar), Workplace (/workplace), Orders (/orders), Customers (/customers), Operations (/operations), Invoice (/invoice), All Company (/all-company — GOD only), **All Accounts** (/all-accounts — Super Admin only; header dropdown), **Company account** (/company-account), **Bot config** (/bot-config), Settings (/settings...), User account (/user-account). Visibility depends on role and company sections.
 
-**13. Roles**  
+**14. Roles**  
 - **SUPER_ADMIN:** Full access: Dashboard, Calendar, Workplace, Orders, Customers, Operations, Company account, Bot config, Settings, Expense/Investment/Reporting when sections enabled.  
 - **OPERATOR:** Typically Calendar, Workplace, Orders, Customers, Operations (e.g. Invoices, Services). No Dashboard/Bot config/Company account/Settings unless granted.  
 - **GOD:** Can access **All Company** (list of companies).
