@@ -10,12 +10,13 @@ import {
 } from "../services/appointment.service.js";
 import { createChatWithTools } from "../middlewares/LLM.js";
 import { parseUserAppointmentTime } from "../utils/dateParser.js";
-import { system_instructions } from "../utils/systemInstructions.js";
+import { getSystemInstructions } from "../utils/systemInstructions.js";
 
-async function processConversation(message, meta) {
+async function processConversation(message, meta, source) {
   try {
     const customer = await addNewMessage(message, meta);
     const customerMessages = await getCustomerMessages(customer._id);
+    const system_instructions = getSystemInstructions(source);
 
     const assistantResponse = await createChatWithTools(
       customerMessages,
@@ -117,9 +118,9 @@ async function processConversation(message, meta) {
 
 export async function handleIncomingMessage(req, res) {
   try {
-    const { message, meta } = req.body;
+    const { message, meta, source } = req.body;
 
-    const assistantResponse = await processConversation(message, meta);
+    const assistantResponse = await processConversation(message, meta, source);
 
     if (assistantResponse?.assistant_message) {
       return res.status(200).json({
