@@ -8,4 +8,5 @@ export const allowedOrigins = [
   "https://www.petbuddy.care/en",
   "https://www.petbuddy.care",
   "https://www.myaviafy.com",
+  "https://app.myaviafy.com"
 ];
